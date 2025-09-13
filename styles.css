@@ -1725,6 +1725,7 @@ body {
     margin-bottom: var(--spacing-sm);
 }
 
+
 /* Responsive Design */
 @media (max-width: 768px) {
     .container {

@@ -215,10 +215,17 @@ function updateClothingPreviews() {
         previewItem.className = 'clothing-preview-item';
         previewItem.innerHTML = `
             <img src="${imageData}" alt="Clothing preview">
-            <button class="remove-btn" onclick="removeClothingImage(${index})">
+            <button class="remove-btn" data-clothing-index="${index}">
                 <i class="fas fa-times"></i>
             </button>
         `;
+        
+        // Add event listener for remove button
+        const removeBtn = previewItem.querySelector('.remove-btn');
+        removeBtn.addEventListener('click', () => {
+            const clothingIndex = parseInt(removeBtn.getAttribute('data-clothing-index'));
+            removeClothingImage(clothingIndex);
+        });
         clothingPreviews.appendChild(previewItem);
     });
 }
@@ -466,12 +473,20 @@ function displayResult(result, generatedPrompts) {
             <img src="${imageData.url}" alt="Generated image ${index + 1}" loading="lazy">
             <div class="image-info">
                 <div class="image-number">Image ${index + 1}</div>
-                <button class="download-single-btn" onclick="downloadSingleImage('${imageData.url}', ${index + 1})">
+                <button class="download-single-btn" data-image-url="${imageData.url}" data-image-number="${index + 1}">
                     <i class="fas fa-download"></i>
                     Download
                 </button>
             </div>
         `;
+        
+        // Add event listener for download button
+        const downloadBtn = imageItem.querySelector('.download-single-btn');
+        downloadBtn.addEventListener('click', () => {
+            const imageUrl = downloadBtn.getAttribute('data-image-url');
+            const imageNumber = downloadBtn.getAttribute('data-image-number');
+            downloadSingleImage(imageUrl, imageNumber);
+        });
         
         resultImages.appendChild(imageItem);
     });
@@ -633,9 +648,30 @@ function initializeFAQ() {
     });
 }
 
+// Initialize navigation event listeners
+function initializeNavigation() {
+    // Logo click handler
+    const logo = document.getElementById('logo');
+    if (logo) {
+        logo.addEventListener('click', () => {
+            document.getElementById('home').scrollIntoView({behavior: 'smooth'});
+        });
+    }
+    
+    // Start trying on button
+    const startBtn = document.getElementById('start-trying-on-btn');
+    if (startBtn) {
+        startBtn.addEventListener('click', () => {
+            document.getElementById('try-on').scrollIntoView({behavior: 'smooth'});
+        });
+    }
+}
+
+
 // Initialize FAQ when DOM is loaded
 document.addEventListener('DOMContentLoaded', function() {
     initializeFAQ();
+    initializeNavigation();
 });
 
 // Header scroll effect

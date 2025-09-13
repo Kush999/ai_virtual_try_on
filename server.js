@@ -21,7 +21,7 @@ app.use(helmet({
             scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'"],
             fontSrc: ["'self'", "https://fonts.gstatic.com", "https://cdnjs.cloudflare.com"],
             imgSrc: ["'self'", "data:", "https:", "http:"],
-            connectSrc: ["'self'", "https://api.openai.com", "https://fal.run"],
+            connectSrc: ["'self'", "https://api.openai.com", "https://fal.run", "https://v3.fal.media", "https://v3b.fal.media"],
             objectSrc: ["'none'"],
             upgradeInsecureRequests: [],
         },
@@ -215,17 +215,90 @@ app.post('/api/generate-prompt', validatePromptRequest, async (req, res) => {
         console.log('Clothing images provided:', clothingImages.length);
         console.log('Custom details:', customDetails);
 
+        // Analyze user photo if provided
+        let userAnalysis = '';
+        if (userImageData) {
+            try {
+                const userAnalysisResponse = await openai.chat.completions.create({
+                    model: "gpt-4o-mini",
+                    messages: [
+                        { role: "system", content: "You are a fashion expert who analyzes people's appearance in detail. Provide clear, structured descriptions of physical characteristics." },
+                        { role: "user", content: [
+                            { type: "text", text: `Analyze the provided user photo and describe the person's physical appearance, facial features, body type, current clothing, skin tone, and any distinctive characteristics. Focus on details that will help create accurate virtual try-on images.` },
+                            {
+                                type: "image_url",
+                                image_url: { url: userImageData }
+                            }
+                        ]}
+                    ],
+                    max_tokens: 600,
+                    temperature: 0.7,
+                });
+                userAnalysis = userAnalysisResponse.choices[0].message.content.trim();
+                console.log('User photo analysis completed');
+            } catch (error) {
+                console.error('Error analyzing user photo:', error);
+                userAnalysis = 'User photo analysis unavailable';
+            }
+        }
+
+        // Analyze clothing images if provided
+        let clothingAnalysis = '';
+        if (clothingImages && clothingImages.length > 0) {
+            try {
+                const clothingAnalysisResponse = await openai.chat.completions.create({
+                    model: "gpt-4o-mini",
+                    messages: [
+                        { role: "system", content: "You are a fashion expert who analyzes clothing items in detail. Provide clear, structured descriptions of clothing characteristics." },
+                        { role: "user", content: [
+                            { type: "text", text: `Analyze the provided clothing images and describe each item's type, style, colors, materials, features, and fit. Focus on details that will help create accurate virtual try-on images.` },
+                            ...clothingImages.map(image => ({
+                                type: "image_url",
+                                image_url: { url: image }
+                            }))
+                        ]}
+                    ],
+                    max_tokens: 800,
+                    temperature: 0.7,
+                });
+                clothingAnalysis = clothingAnalysisResponse.choices[0].message.content.trim();
+                console.log('Clothing analysis completed');
+            } catch (error) {
+                console.error('Error analyzing clothing:', error);
+                clothingAnalysis = 'Clothing analysis unavailable';
+            }
+        }
+
         // Create a detailed system prompt for GPT
-        const systemPrompt = `You are a master AI image editing artist and creative director specializing in virtual clothing try-on. Your expertise lies in creating ${numImages} UNIQUE, ARTISTIC, and CREATIVELY STUNNING prompts that transform ordinary clothing swaps into extraordinary visual masterpieces.
+        const systemPrompt = `You are a master AI image editing artist and creative director specializing in virtual clothing try-on. Your expertise lies in creating EXACTLY ${numImages} UNIQUE, ARTISTIC, and CREATIVELY STUNNING prompts that transform ordinary clothing swaps into extraordinary visual masterpieces.
 
 CRITICAL CREATIVE REQUIREMENTS:
-1. Generate ${numImages} DISTINCTIVELY UNIQUE and ARTISTICALLY VARIED prompts - each should be a creative masterpiece
-2. Each prompt must REPLACE the person's current clothing with the SPECIFIC UPLOADED CLOTHING ITEMS while creating VISUAL MAGIC
-3. PRESERVE ONLY the person's face and body - EVERYTHING ELSE CAN CHANGE (background, setting, environment, lighting, atmosphere)
-4. COMPLETELY TRANSFORM the scene according to the selected photography style - create entirely new environments and settings
-5. ALWAYS reference the uploaded clothing items specifically in your prompts - mention that these are the exact clothing items to be worn
-6. CHANGE THE BACKGROUND COMPLETELY - do not preserve the original setting, create new environments that match the selected style
-7. DO NOT describe what the clothing looks like - simply instruct to replace with the uploaded clothing items
+1. Generate EXACTLY ${numImages} DISTINCTIVELY UNIQUE and ARTISTICALLY VARIED prompts - each should be a creative masterpiece with NO DUPLICATION
+2. Each prompt must be COMPLETELY DIFFERENT from the others - no repeated content, scenarios, or descriptions
+3. PRECISE SELECTIVE CLOTHING REPLACEMENT: Only replace the SPECIFIC UPLOADED CLOTHING ITEMS - all other clothing from the original photo must remain EXACTLY THE SAME. If user uploads only pants, change ONLY the pants. If user uploads pants and shirt, change ONLY pants and shirt. Keep everything else identical to the original photo.
+4. PRESERVE ONLY the person's face and body - EVERYTHING ELSE CAN CHANGE (background, setting, environment, lighting, atmosphere)
+5. COMPLETELY TRANSFORM the scene according to the selected photography style - create entirely new environments and settings
+6. ALWAYS reference the uploaded clothing items specifically in your prompts - mention that these are the exact clothing items to be worn
+7. CHANGE THE BACKGROUND COMPLETELY - do not preserve the original setting, create new environments that match the selected style
+8. USE the provided USER ANALYSIS and CLOTHING ANALYSIS to create accurate, personalized prompts that consider the specific person and clothing characteristics
+9. DO NOT describe what the clothing looks like - simply instruct to replace with the uploaded clothing items
+10. SELECTIVE REPLACEMENT: If user uploads shoes, only change the shoes. If user uploads a shirt, only change the shirt. Keep all other clothing items identical to the original photo.
+
+FACE AND BODY CONSISTENCY REQUIREMENTS:
+- PRESERVE the person's facial features, bone structure, skin tone, and hair EXACTLY as shown
+- MAINTAIN the same height, build, body proportions, and physical characteristics
+- Keep the same person's identity and physical appearance
+- Only change clothing and background/environment
+- Ensure facial structure, body shape, and proportions remain identical
+- Emphasize maintaining the exact same person's physical characteristics
+
+CLOTHING REQUIREMENTS:
+- PRECISE SELECTIVE REPLACEMENT: Only replace the specific uploaded clothing items, keep all other clothing from the original photo unchanged
+- EXAMPLES: If user uploads only pants → change ONLY pants, keep shirt/shoes/accessories exactly the same. If user uploads pants + shirt → change ONLY pants and shirt, keep shoes/accessories exactly the same
+- ENSURE the uploaded clothing items are worn exactly as they appear in the uploaded images
+- CREATE prompts that showcase the uploaded clothing items effectively while preserving other clothing
+- INCLUDE clothing-specific details in the artistic descriptions
+- MAINTAIN original clothing items that were not uploaded (shoes, pants, accessories, etc.) EXACTLY as they appear in the original photo
 
 Your prompts should be CREATIVE MASTERPIECES that:
 - Create UNIQUE and ARTISTICALLY DISTINCT visual experiences
@@ -258,29 +331,40 @@ CREATIVE ENHANCEMENT TECHNIQUES TO INCLUDE:
 
 IMPORTANT: Generate ${numImages} UNIQUE ARTISTIC prompts that focus on clothing replacement FIRST, then apply CREATIVE VISUAL ENHANCEMENT with different artistic variations that push creative boundaries.`;
 
-        // Create clothing description for prompts
-        let clothingDescription = '';
+        // Create analysis descriptions for prompts
+        let analysisDescription = '';
+        
+        if (userAnalysis && userAnalysis !== 'User photo analysis unavailable') {
+            analysisDescription += `\nUSER ANALYSIS:\n${userAnalysis}\n`;
+        }
+        
+        if (clothingAnalysis && clothingAnalysis !== 'Clothing analysis unavailable') {
+            analysisDescription += `\nCLOTHING ANALYSIS:\n${clothingAnalysis}\n`;
+        }
+        
         if (clothingImages && clothingImages.length > 0) {
-            clothingDescription = `\nCLOTHING ITEMS TO TRY ON:\nThe user has uploaded ${clothingImages.length} clothing item(s) that they want to try on. These are the EXACT clothing items that must be worn in the generated images. DO NOT describe what the clothing looks like - simply instruct the AI to replace the person's current clothing with the uploaded clothing items.`;
+            analysisDescription += `\nCLOTHING ITEMS TO TRY ON:\nThe user has uploaded ${clothingImages.length} clothing item(s) that they want to try on. These are the EXACT clothing items that must be worn in the generated images. CRITICAL: Only replace these specific uploaded clothing items - keep all other clothing from the original photo unchanged. If user uploads only pants, change ONLY the pants. If user uploads pants and shirt, change ONLY pants and shirt. Keep everything else identical to the original photo.`;
         } else {
-            clothingDescription = '\nCLOTHING ITEMS: The user will provide clothing images separately. Focus on creating artistic prompts for clothing replacement.';
+            analysisDescription += '\nCLOTHING ITEMS: The user will provide clothing images separately. Focus on creating artistic prompts for selective clothing replacement.';
         }
 
-        const userPrompt = `Create ${numImages} UNIQUE ARTISTIC prompts for AI image editing to perform virtual clothing try-on with CREATIVE VISUAL ENHANCEMENT.
+        const userPrompt = `Create EXACTLY ${numImages} UNIQUE ARTISTIC prompts for AI image editing to perform virtual clothing try-on with CREATIVE VISUAL ENHANCEMENT.
 
 Style: ${style}
-Number of unique artistic prompts needed: ${numImages}${clothingDescription}
+Number of unique artistic prompts needed: EXACTLY ${numImages}${analysisDescription}
 ${customDetails ? `Additional Creative Details: ${customDetails}` : ''}
 
 CRITICAL CREATIVE INSTRUCTIONS:
-1. Generate ${numImages} DISTINCTIVELY UNIQUE and ARTISTICALLY STUNNING prompts
-2. Each prompt must REPLACE the person's current clothing with the uploaded clothing while creating VISUAL MAGIC
-3. PRESERVE ONLY the person's face and body - COMPLETELY CHANGE everything else (background, setting, environment, lighting, atmosphere)
-4. Each prompt should COMPLETELY TRANSFORM the scene to match ${style} photography style - create entirely new environments and settings
-5. DO NOT preserve the original background or setting - create completely new scenes that match the selected style
+1. Generate EXACTLY ${numImages} DISTINCTIVELY UNIQUE and ARTISTICALLY STUNNING prompts - NO DUPLICATION ALLOWED
+2. Each prompt must be COMPLETELY DIFFERENT - no repeated scenarios, settings, or descriptions
+3. PRECISE SELECTIVE CLOTHING REPLACEMENT: Only replace the specific uploaded clothing items - keep all other clothing from the original photo unchanged. If user uploads only pants, change ONLY the pants. If user uploads pants and shirt, change ONLY pants and shirt. Keep everything else identical to the original photo.
+4. PRESERVE ONLY the person's face and body - COMPLETELY CHANGE everything else (background, setting, environment, lighting, atmosphere)
+5. Each prompt should COMPLETELY TRANSFORM the scene to match ${style} photography style - create entirely new environments and settings
+6. DO NOT preserve the original background or setting - create completely new scenes that match the selected style
+7. MAINTAIN all original clothing items that were not uploaded (shoes, pants, accessories, etc.)
 
 Each prompt should be a CREATIVE MASTERPIECE that instructs the AI to:
-- Remove the person's current clothing and replace with the SPECIFIC UPLOADED CLOTHING ITEMS (mention these are the exact clothing items provided)
+- PRECISELY replace only the SPECIFIC UPLOADED CLOTHING ITEMS - keep all other clothing from the original photo unchanged. If user uploads only pants, change ONLY the pants. If user uploads pants and shirt, change ONLY pants and shirt. Keep everything else identical to the original photo.
 - DO NOT describe what the clothing looks like - simply instruct to replace with the uploaded clothing items
 - Maintain ONLY the person's face and body appearance unchanged - EVERYTHING ELSE MUST CHANGE
 - COMPLETELY CHANGE the background and setting to match ${style} style - create entirely new environments
@@ -288,11 +372,17 @@ Each prompt should be a CREATIVE MASTERPIECE that instructs the AI to:
 - Apply ADVANCED ${style} style lighting techniques (rim lighting, dramatic shadows, creative illumination)
 - Include ARTISTIC composition elements (rule of thirds, leading lines, creative framing, depth of field artistry)
 - Create COMPLETELY NEW backgrounds and settings that match ${style} photography style
+- PRESERVE all original clothing items that were not uploaded (shoes, pants, accessories, etc.)
 - Incorporate MOOD and ATMOSPHERE through creative lighting, color grading, and artistic ambiance
 - Use CREATIVE DEPTH OF FIELD effects (selective focus, artistic bokeh, creative blur techniques)
 - Apply COLOR THEORY for artistic impact (complementary colors, creative color grading, artistic palettes)
 - SPECIFICALLY MENTION that the uploaded clothing items must be worn exactly as provided
 - DO NOT preserve the original background - create completely new scenes and environments
+- EXAMPLES OF SELECTIVE REPLACEMENT:
+  * User uploads only pants → Change ONLY pants, keep shirt/shoes/accessories exactly the same
+  * User uploads pants + shirt → Change ONLY pants and shirt, keep shoes/accessories exactly the same  
+  * User uploads pants + shirt + shoes → Change ONLY pants, shirt, and shoes, keep accessories exactly the same
+  * User uploads only shoes → Change ONLY shoes, keep pants/shirt/accessories exactly the same
 
 ARTISTIC ENHANCEMENT REQUIREMENTS:
 - Each prompt should create a COMPLETELY NEW VISUAL EXPERIENCE with entirely different environments
@@ -304,7 +394,7 @@ ARTISTIC ENHANCEMENT REQUIREMENTS:
 - Include CREATIVE COMPOSITION techniques for maximum visual impact in the new setting
 - TRANSFORM the entire scene to match ${style} photography style - create new studios, streets, outdoor locations, etc.
 
-Generate ${numImages} UNIQUE ARTISTIC prompts that will COMPLETELY TRANSFORM the scene, creating ${numImages} visually stunning images with entirely new environments, varied artistic poses, and advanced ${style} style applications. Each prompt should create a completely different setting that matches the selected style - do not preserve the original background or environment. IMPORTANT: Simply instruct to replace the person's current clothing with the uploaded clothing items - do not describe what the clothing looks like.`;
+Generate EXACTLY ${numImages} UNIQUE ARTISTIC prompts that will COMPLETELY TRANSFORM the scene, creating ${numImages} visually stunning images with entirely new environments, varied artistic poses, and advanced ${style} style applications. Each prompt must be COMPLETELY DIFFERENT from the others - no repeated scenarios, settings, or descriptions. Each prompt should create a completely different setting that matches the selected style - do not preserve the original background or environment. IMPORTANT: Simply instruct to replace the person's current clothing with the uploaded clothing items - do not describe what the clothing looks like.`;
 
         // Prepare messages array
         const messages = [
@@ -338,6 +428,13 @@ Generate ${numImages} UNIQUE ARTISTIC prompts that will COMPLETELY TRANSFORM the
         
         // Parse the response to extract individual prompts
         const prompts = parseMultiplePrompts(promptText, numImages);
+        
+        console.log('=== PROMPT PARSING DEBUG ===');
+        console.log('Expected number of prompts:', numImages);
+        console.log('Actual number of prompts parsed:', prompts.length);
+        console.log('First prompt length:', prompts[0] ? prompts[0].length : 'N/A');
+        console.log('First prompt preview:', prompts[0] ? prompts[0].substring(0, 200) + '...' : 'N/A');
+        console.log('=== END PROMPT PARSING DEBUG ===');
         
         res.json({
             success: true,
@@ -378,6 +475,7 @@ Generate ${numImages} UNIQUE ARTISTIC prompts that will COMPLETELY TRANSFORM the
 // Helper function to parse multiple prompts from GPT response
 function parseMultiplePrompts(promptText, expectedCount) {
     const prompts = [];
+    const seenPrompts = new Set(); // Track seen prompts to avoid duplicates
     
     console.log('Parsing prompts from text:', promptText.substring(0, 200) + '...');
     
@@ -397,9 +495,36 @@ function parseMultiplePrompts(promptText, expectedCount) {
             prompt = prompt.replace(/\*\*(.*?)\*\*/g, '$1');
             prompt = prompt.replace(/\*(.*?)\*/g, '$1');
             
-            if (prompt.length > 100) { // Ensure it's a substantial prompt
+            // Create a normalized version for duplicate detection
+            const normalizedPrompt = prompt.toLowerCase().replace(/\s+/g, ' ').trim();
+            
+            if (prompt.length > 100 && !seenPrompts.has(normalizedPrompt)) { // Ensure it's a substantial prompt and not a duplicate
                 prompts.push(prompt);
+                seenPrompts.add(normalizedPrompt);
                 console.log(`Added structured prompt ${prompts.length}:`, prompt.substring(0, 100) + '...');
+            }
+        }
+    }
+    
+    // If we still don't have enough prompts, try a different approach - split by "### Prompt" sections
+    if (prompts.length < expectedCount) {
+        const promptSections = promptText.split(/###\s*Prompt\s*\d*:/i);
+        console.log('Found prompt sections:', promptSections.length);
+        
+        for (let i = 1; i < promptSections.length && prompts.length < expectedCount; i++) {
+            let prompt = promptSections[i].trim();
+            
+            // Remove any remaining markdown formatting
+            prompt = prompt.replace(/\*\*(.*?)\*\*/g, '$1');
+            prompt = prompt.replace(/\*(.*?)\*/g, '$1');
+            
+            // Create a normalized version for duplicate detection
+            const normalizedPrompt = prompt.toLowerCase().replace(/\s+/g, ' ').trim();
+            
+            if (prompt.length > 100 && !seenPrompts.has(normalizedPrompt)) {
+                prompts.push(prompt);
+                seenPrompts.add(normalizedPrompt);
+                console.log(`Added section prompt ${prompts.length}:`, prompt.substring(0, 100) + '...');
             }
         }
     }
@@ -410,9 +535,18 @@ function parseMultiplePrompts(promptText, expectedCount) {
         if (numberedSplit.length > 1) {
             console.log('Found numbered split:', numberedSplit.length, 'sections');
             for (let i = 1; i < numberedSplit.length && prompts.length < expectedCount; i++) {
-                const prompt = numberedSplit[i].trim();
-                if (prompt.length > 100) { // Ensure it's a substantial prompt
+                let prompt = numberedSplit[i].trim();
+                
+                // Clean up markdown formatting
+                prompt = prompt.replace(/\*\*(.*?)\*\*/g, '$1');
+                prompt = prompt.replace(/\*(.*?)\*/g, '$1');
+                
+                // Create a normalized version for duplicate detection
+                const normalizedPrompt = prompt.toLowerCase().replace(/\s+/g, ' ').trim();
+                
+                if (prompt.length > 100 && !seenPrompts.has(normalizedPrompt)) { // Ensure it's a substantial prompt and not a duplicate
                     prompts.push(prompt);
+                    seenPrompts.add(normalizedPrompt);
                     console.log(`Added numbered prompt ${prompts.length}:`, prompt.substring(0, 100) + '...');
                 }
             }
@@ -428,9 +562,13 @@ function parseMultiplePrompts(promptText, expectedCount) {
             .replace(/\*(.*?)\*/g, '$1')
             .trim();
         
-        // If the content is substantial, use it as a prompt
-        if (mainContent.length > 100) {
+        // Create a normalized version for duplicate detection
+        const normalizedContent = mainContent.toLowerCase().replace(/\s+/g, ' ').trim();
+        
+        // If the content is substantial and not a duplicate, use it as a prompt
+        if (mainContent.length > 100 && !seenPrompts.has(normalizedContent)) {
             prompts.push(mainContent);
+            seenPrompts.add(normalizedContent);
             console.log(`Added main content prompt:`, mainContent.substring(0, 100) + '...');
         }
     }
@@ -446,19 +584,34 @@ function parseMultiplePrompts(promptText, expectedCount) {
             prompt = prompt.replace(/\*\*(.*?)\*\*/g, '$1');
             prompt = prompt.replace(/\*(.*?)\*/g, '$1');
             
-            if (prompt.length > 100) {
+            // Create a normalized version for duplicate detection
+            const normalizedPrompt = prompt.toLowerCase().replace(/\s+/g, ' ').trim();
+            
+            if (prompt.length > 100 && !seenPrompts.has(normalizedPrompt)) {
                 prompts.push(prompt);
+                seenPrompts.add(normalizedPrompt);
                 console.log(`Added paragraph prompt ${prompts.length}:`, prompt.substring(0, 100) + '...');
             }
         }
     }
     
-    // If we still don't have enough, duplicate the original text with variations
+    // If we still don't have enough, create variations of existing prompts
     while (prompts.length < expectedCount) {
         const basePrompt = prompts[0] || promptText;
         const variation = createPromptVariation(basePrompt, prompts.length + 1);
-        prompts.push(variation);
-        console.log(`Added variation ${prompts.length}:`, variation.substring(0, 100) + '...');
+        
+        // Create a normalized version for duplicate detection
+        const normalizedVariation = variation.toLowerCase().replace(/\s+/g, ' ').trim();
+        
+        if (!seenPrompts.has(normalizedVariation)) {
+            prompts.push(variation);
+            seenPrompts.add(normalizedVariation);
+            console.log(`Added variation ${prompts.length}:`, variation.substring(0, 100) + '...');
+        } else {
+            // If the variation is a duplicate, break to avoid infinite loop
+            console.log('Variation is duplicate, stopping generation');
+            break;
+        }
     }
     
     console.log(`Final prompts count: ${prompts.length}`);
@@ -471,11 +624,153 @@ function createPromptVariation(basePrompt, index) {
         `ARTISTIC VARIATION ${index}: Replace the person's current clothing with the uploaded clothing items, maintaining their face and body unchanged. Apply dramatic artistic lighting with creative shadows and rim lighting effects. Position the person in a dynamic pose with emotional expression against an artistic background with depth and texture. Use advanced composition techniques including rule of thirds and creative depth of field for maximum visual impact.`,
         `CREATIVE MASTERPIECE ${index}: Remove the person's current clothing and dress them in the uploaded clothing items, keeping their face and body appearance the same. Create a visually stunning composition with artistic lighting, creative pose variations, and dramatic background elements. Apply mood and atmosphere through sophisticated color grading and artistic ambiance for a truly artistic result.`,
         `VISUAL ARTWORK ${index}: Transform the person's clothing to the uploaded items while preserving their facial features and body structure. Craft an artistic visual experience with creative lighting setups, dynamic pose expressions, and artistic background transformations. Incorporate advanced photography techniques including selective focus, artistic bokeh, and creative composition for a masterpiece result.`,
-        `ARTISTIC ENHANCEMENT ${index}: Replace the person's current clothing with the uploaded clothing items, maintaining their face and body unchanged. Create an artistic visual narrative with dramatic lighting, creative shadow play, and sophisticated composition. Apply color theory principles and artistic depth of field effects for a creatively enhanced, visually stunning image.`
+        `ARTISTIC ENHANCEMENT ${index}: Replace the person's current clothing with the uploaded clothing items, maintaining their face and body unchanged. Create an artistic visual narrative with dramatic lighting, creative shadow play, and sophisticated composition. Apply color theory principles and artistic depth of field effects for a creatively enhanced, visually stunning image.`,
+        `CINEMATIC TRANSFORMATION ${index}: Replace the person's current clothing with the uploaded clothing items while preserving their face and body exactly. Create a cinematic masterpiece with dramatic film lighting, atmospheric effects, and storytelling composition. Use advanced cinematography techniques including depth of field, creative framing, and mood lighting for a movie-quality result.`,
+        `FASHION EDITORIAL ${index}: Transform the person's clothing to the uploaded items, keeping their face and body unchanged. Create a high-fashion editorial scene with dramatic studio lighting, artistic poses, and sophisticated composition. Apply fashion photography techniques including creative lighting, artistic shadows, and professional styling for a magazine-quality result.`,
+        `STREET ART MASTERPIECE ${index}: Replace the person's current clothing with the uploaded clothing items while maintaining their face and body. Create a vibrant street photography scene with urban graffiti backgrounds, dynamic poses, and authentic street aesthetics. Use creative urban lighting, candid photography techniques, and artistic street elements for a dynamic result.`,
+        `VINTAGE GLAMOUR ${index}: Transform the person's clothing to the uploaded items, preserving their face and body exactly. Create a nostalgic vintage scene with period-appropriate styling, artistic film grain effects, and classic photography techniques. Apply vintage color grading, retro aesthetics, and timeless composition for a nostalgic masterpiece.`,
+        `MINIMALIST ELEGANCE ${index}: Replace the person's current clothing with the uploaded clothing items while keeping their face and body unchanged. Create a clean, minimalist composition with sophisticated negative space, artistic simplicity, and maximum visual impact. Use creative minimalism, elegant lighting, and sophisticated composition for a refined result.`,
+        `PROFESSIONAL SOPHISTICATION ${index}: Transform the person's clothing to the uploaded items, maintaining their face and body exactly. Create a professional corporate scene with sophisticated business aesthetics, polished lighting, and executive photography techniques. Apply corporate styling, professional composition, and refined business aesthetics for a polished result.`
     ];
     
     return creativeVariations[index % creativeVariations.length];
 }
+
+// Analyze user photo endpoint
+app.post('/api/analyze-user-photo', async (req, res) => {
+    try {
+        const { userImage } = req.body;
+
+        if (!userImage) {
+            return res.status(400).json({ 
+                success: false, 
+                error: 'No user image provided' 
+            });
+        }
+
+        console.log('Analyzing user photo');
+
+        // Create analysis prompt
+        const analysisPrompt = `Analyze the provided user photo and provide detailed descriptions of the person. Describe:
+
+1. Physical appearance (age, gender, ethnicity if visible)
+2. Facial features (hair color, hair style, facial hair, eye color if visible)
+3. Body type and build (height, build, posture)
+4. Current clothing and style
+5. Skin tone and complexion
+6. Any distinctive features or characteristics
+7. Overall appearance and style
+
+Please provide a clear, structured analysis of the person in the photo.`;
+
+        // Prepare messages array with user image
+        const messages = [
+            { role: "system", content: "You are a fashion expert who analyzes people's appearance in detail. Provide clear, structured descriptions of physical characteristics." },
+            { role: "user", content: [
+                { type: "text", text: analysisPrompt },
+                {
+                    type: "image_url",
+                    image_url: {
+                        url: userImage
+                    }
+                }
+            ]}
+        ];
+
+        const completion = await openai.chat.completions.create({
+            model: "gpt-4o-mini",
+            messages: messages,
+            max_tokens: 800,
+            temperature: 0.7,
+        });
+
+        const analysisText = completion.choices[0].message.content.trim();
+        
+        console.log('User photo analysis completed');
+
+        res.json({
+            success: true,
+            analysis: analysisText
+        });
+
+    } catch (error) {
+        console.error('Error analyzing user photo:', error);
+        res.status(500).json({ 
+            success: false, 
+            error: 'Failed to analyze user photo' 
+        });
+    }
+});
+
+// Analyze clothing images endpoint
+app.post('/api/analyze-clothing', async (req, res) => {
+    try {
+        const { clothingImages } = req.body;
+
+        if (!clothingImages || clothingImages.length === 0) {
+            return res.status(400).json({ 
+                success: false, 
+                error: 'No clothing images provided' 
+            });
+        }
+
+        console.log(`Analyzing ${clothingImages.length} clothing item(s)`);
+
+        // Create analysis prompt
+        const analysisPrompt = `Analyze the provided clothing images and provide detailed descriptions of each item. For each clothing item, describe:
+
+1. Type of clothing (shirt, dress, jacket, shoes, jewelry, accessories, etc.)
+2. Style and aesthetic (casual, formal, vintage, modern, streetwear, etc.)
+3. Colors and patterns (solid colors, stripes, floral, geometric, etc.)
+4. Material/texture appearance (cotton, leather, silk, denim, etc.)
+5. Any distinctive features or accessories (buttons, zippers, logos, etc.)
+6. Fit and silhouette (loose, fitted, oversized, etc.)
+
+Please provide a clear, structured analysis for each clothing item.`;
+
+        // Prepare messages array with clothing images
+        const messages = [
+            { role: "system", content: "You are a fashion expert who analyzes clothing items in detail. Provide clear, structured descriptions of clothing characteristics." },
+            { role: "user", content: analysisPrompt }
+        ];
+
+        // Add clothing images to the user message
+        const imageContent = [{ type: "text", text: analysisPrompt }];
+        clothingImages.forEach((clothingImage, index) => {
+            imageContent.push({
+                type: "image_url",
+                image_url: {
+                    url: clothingImage
+                }
+            });
+        });
+        messages[1].content = imageContent;
+
+        const completion = await openai.chat.completions.create({
+            model: "gpt-4o-mini",
+            messages: messages,
+            max_tokens: 1000,
+            temperature: 0.7,
+        });
+
+        const analysisText = completion.choices[0].message.content.trim();
+        
+        console.log('Clothing analysis completed');
+
+        res.json({
+            success: true,
+            analysis: analysisText,
+            clothingCount: clothingImages.length
+        });
+
+    } catch (error) {
+        console.error('Error analyzing clothing:', error);
+        res.status(500).json({ 
+            success: false, 
+            error: 'Failed to analyze clothing images' 
+        });
+    }
+});
 
 // Generate try-on image endpoint
 app.post('/api/generate-try-on', validateTryOnRequest, async (req, res) => {
