@@ -13,7 +13,7 @@
     <header class="header">
         <div class="container">
             <div class="header-content">
-                <div class="logo">
+                <div class="logo" onclick="document.getElementById('home').scrollIntoView({behavior: 'smooth'})" style="cursor: pointer;">
                     <div class="logo-icon">
                         <i class="fas fa-star"></i>
                     </div>
@@ -27,7 +27,6 @@
                 </nav>
                 <div class="header-actions">
                     <button class="btn-secondary">Sign In</button>
-                    <button class="btn-primary">Get Started</button>
                 </div>
             </div>
         </div>
@@ -50,18 +49,64 @@
                     Try On Any <span class="gradient-text">Outfit Instantly</span>
                 </h1>
                 <p class="hero-subtitle">
-                    Revolutionary AI-powered virtual fitting room. Upload your photo and any clothing item to see yourself wearing it in seconds.
+                    Revolutionary AI-powered virtual fitting room powered by GPT and NanoBanana. Upload your photo and any clothing item to see yourself wearing it in seconds.
                 </p>
                 <div class="hero-actions">
-                    <button class="btn-primary btn-large">
+                    <button class="btn-primary btn-large" onclick="document.getElementById('try-on').scrollIntoView({behavior: 'smooth'})">
                         <i class="fas fa-magic"></i>
                         Start Trying On
                     </button>
-                    <button class="btn-outline">
-                        <i class="fas fa-play"></i>
-                        Watch Demo
-                    </button>
                 </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Showcase Section -->
+    <section class="showcase-section" id="showcase">
+        <div class="container">
+            <div class="section-header">
+                <h2 class="section-title">
+                    See It In <span class="gradient-text">Action</span>
+                </h2>
+                <p class="section-subtitle">
+                    Watch how our AI transforms your photos with virtual clothing try-on
+                </p>
+            </div>
+            
+            <div class="showcase-grid">
+                <div class="showcase-item">
+                    <div class="showcase-step">
+                        <div class="step-number">1</div>
+                        <h3>Upload Your Photo</h3>
+                        <div class="showcase-image">
+                            <img src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=300&h=400&fit=crop&crop=face" alt="Person photo">
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="showcase-item">
+                    <div class="showcase-step">
+                        <div class="step-number">2</div>
+                        <h3>Add Clothing Items</h3>
+                        <div class="showcase-image">
+                            <img src="https://images.unsplash.com/photo-1594633312681-425c7b97ccd1?w=300&h=400&fit=crop" alt="Clothing item">
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="showcase-item">
+                    <div class="showcase-step">
+                        <div class="step-number">3</div>
+                        <h3>Get Amazing Results</h3>
+                        <div class="showcase-image">
+                            <img src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=300&h=400&fit=crop&crop=face" alt="Final result">
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="showcase-arrow">
+                <i class="fas fa-arrow-right"></i>
             </div>
         </div>
     </section>
@@ -132,59 +177,80 @@
                         </div>
                     </div>
 
-                    <div class="input-row">
-                        <!-- Style Selection -->
-                        <div class="input-card">
-                            <div class="input-header">
-                                <h3>Choose Style</h3>
-                                <p>Select the style for your virtual try-on</p>
+                    <!-- Style Selection -->
+                    <div class="input-card full-width">
+                        <div class="input-header">
+                            <h3>Choose Style</h3>
+                            <p>Select the style for your virtual try-on</p>
+                        </div>
+                        <div class="style-grid">
+                            <div class="style-option active" data-style="fashion">
+                                <div class="style-icon">
+                                    <i class="fas fa-camera"></i>
+                                </div>
+                                <h4>Fashion Editorial</h4>
+                                <p>High-fashion magazine style</p>
                             </div>
-                            <div class="style-grid">
-                                <div class="style-option active" data-style="realistic">
-                                    <div class="style-icon">
-                                        <i class="fas fa-camera"></i>
-                                    </div>
-                                    <h4>Realistic</h4>
-                                    <p>Natural, photorealistic style</p>
+                            <div class="style-option" data-style="studio">
+                                <div class="style-icon">
+                                    <i class="fas fa-video"></i>
                                 </div>
-                                <div class="style-option" data-style="fashion">
-                                    <div class="style-icon">
-                                        <i class="fas fa-tshirt"></i>
-                                    </div>
-                                    <h4>Fashion</h4>
-                                    <p>Professional fashion shoot style</p>
+                                <h4>Studio Professional</h4>
+                                <p>Professional studio photography</p>
+                            </div>
+                            <div class="style-option" data-style="cinematic">
+                                <div class="style-icon">
+                                    <i class="fas fa-film"></i>
                                 </div>
-                                <div class="style-option" data-style="casual">
-                                    <div class="style-icon">
-                                        <i class="fas fa-user"></i>
-                                    </div>
-                                    <h4>Casual</h4>
-                                    <p>Everyday, relaxed styling</p>
+                                <h4>Cinematic</h4>
+                                <p>Dramatic, movie-like quality</p>
+                            </div>
+                            <div class="style-option" data-style="street">
+                                <div class="style-icon">
+                                    <i class="fas fa-city"></i>
                                 </div>
-                                <div class="style-option" data-style="artistic">
-                                    <div class="style-icon">
-                                        <i class="fas fa-palette"></i>
-                                    </div>
-                                    <h4>Artistic</h4>
-                                    <p>Creative, stylized look</p>
+                                <h4>Street Style</h4>
+                                <p>Urban, street-style photography</p>
+                            </div>
+                            <div class="style-option" data-style="vintage">
+                                <div class="style-icon">
+                                    <i class="fas fa-camera-retro"></i>
                                 </div>
-                                <div class="style-option" data-style="vintage">
-                                    <div class="style-icon">
-                                        <i class="fas fa-camera-retro"></i>
-                                    </div>
-                                    <h4>Vintage</h4>
-                                    <p>Classic, retro aesthetic</p>
+                                <h4>Vintage/Retro</h4>
+                                <p>Classic, retro aesthetic</p>
+                            </div>
+                            <div class="style-option" data-style="minimalist">
+                                <div class="style-icon">
+                                    <i class="fas fa-circle"></i>
                                 </div>
-                                <div class="style-option" data-style="modern">
-                                    <div class="style-icon">
-                                        <i class="fas fa-star"></i>
-                                    </div>
-                                    <h4>Modern</h4>
-                                    <p>Contemporary, sleek style</p>
+                                <h4>Minimalist</h4>
+                                <p>Clean, simple aesthetic</p>
+                            </div>
+                            <div class="style-option" data-style="formal">
+                                <div class="style-icon">
+                                    <i class="fas fa-suitcase"></i>
                                 </div>
+                                <h4>Formal/Elegant</h4>
+                                <p>Elegant, formal attire styling</p>
+                            </div>
+                            <div class="style-option" data-style="casual">
+                                <div class="style-icon">
+                                    <i class="fas fa-user"></i>
+                                </div>
+                                <h4>Casual Everyday</h4>
+                                <p>Everyday, relaxed styling</p>
+                            </div>
+                            <div class="style-option" data-style="professional">
+                                <div class="style-icon">
+                                    <i class="fas fa-briefcase"></i>
+                                </div>
+                                <h4>Professional</h4>
+                                <p>Business, professional look</p>
                             </div>
                         </div>
+                    </div>
 
+                    <div class="input-row">
                         <!-- Customization -->
                         <div class="input-card">
                             <div class="input-header">
@@ -197,15 +263,24 @@
                                     <p class="input-description">Describe specific pose, lighting, background, or style preferences</p>
                                     <textarea id="customPrompt" placeholder="e.g., professional headshot with soft lighting, outdoor setting, confident pose..."></textarea>
                                 </div>
-                                <div class="image-count-section">
-                                    <label>Number of Images: <span id="imageCountValue">2</span></label>
-                                    <p class="input-description">Generate multiple variations to find your perfect look</p>
-                                    <div class="count-selector">
-                                        <button class="count-btn" data-count="1">1</button>
-                                        <button class="count-btn active" data-count="2">2</button>
-                                        <button class="count-btn" data-count="3">3</button>
-                                        <button class="count-btn" data-count="4">4</button>
-                                    </div>
+                            </div>
+                        </div>
+
+                        <!-- Image Count -->
+                        <div class="input-card">
+                            <div class="input-header">
+                                <h3>Generate Options</h3>
+                                <p>Choose how many images to generate</p>
+                            </div>
+                            <div class="image-count-section">
+                                <label>Number of Images: <span id="imageCountValue">2</span></label>
+                                <p class="input-description">Generate multiple variations to find your perfect look</p>
+                                <div class="count-selector">
+                                    <button class="count-btn" data-count="1">1</button>
+                                    <button class="count-btn active" data-count="2">2</button>
+                                    <button class="count-btn" data-count="3">3</button>
+                                    <button class="count-btn" data-count="4">4</button>
+                                    <button class="count-btn" data-count="5">5</button>
                                 </div>
                             </div>
                         </div>
@@ -306,6 +381,208 @@
         </div>
     </section>
 
+    <!-- Pricing Section -->
+    <section class="pricing-section" id="pricing">
+        <div class="container">
+            <div class="section-header">
+                <h2 class="section-title">
+                    Choose Your <span class="gradient-text">Plan</span>
+                </h2>
+                <p class="section-subtitle">
+                    Select the perfect plan for your virtual try-on needs
+                </p>
+            </div>
+            
+            <div class="pricing-grid">
+                <div class="pricing-card basic">
+                    <div class="pricing-header">
+                        <h3>Basic</h3>
+                        <div class="price">
+                            <span class="currency">$</span>
+                            <span class="amount">9</span>
+                            <span class="period">/month</span>
+                        </div>
+                        <p class="price-description">Perfect for personal use</p>
+                    </div>
+                    
+                    <div class="pricing-features">
+                        <ul>
+                            <li><i class="fas fa-check"></i> 50 virtual try-ons per month</li>
+                            <li><i class="fas fa-check"></i> 1 image per generation</li>
+                            <li><i class="fas fa-check"></i> All style options</li>
+                            <li><i class="fas fa-check"></i> High-quality results</li>
+                            <li><i class="fas fa-check"></i> Download images</li>
+                            <li><i class="fas fa-check"></i> Email support</li>
+                        </ul>
+                    </div>
+                    
+                    <button class="btn-outline pricing-btn">Get Started</button>
+                </div>
+                
+                <div class="pricing-card premium">
+                    <div class="popular-badge">Most Popular</div>
+                    <div class="pricing-header">
+                        <h3>Premium</h3>
+                        <div class="price">
+                            <span class="currency">$</span>
+                            <span class="amount">29</span>
+                            <span class="period">/month</span>
+                        </div>
+                        <p class="price-description">For professionals and businesses</p>
+                    </div>
+                    
+                    <div class="pricing-features">
+                        <ul>
+                            <li><i class="fas fa-check"></i> 500 virtual try-ons per month</li>
+                            <li><i class="fas fa-check"></i> Up to 5 images per generation</li>
+                            <li><i class="fas fa-check"></i> All style options</li>
+                            <li><i class="fas fa-check"></i> Ultra-high quality results</li>
+                            <li><i class="fas fa-check"></i> Bulk download</li>
+                            <li><i class="fas fa-check"></i> Priority support</li>
+                            <li><i class="fas fa-check"></i> API access</li>
+                            <li><i class="fas fa-check"></i> Commercial license</li>
+                        </ul>
+                    </div>
+                    
+                    <button class="btn-primary pricing-btn">Get Started</button>
+                </div>
+            </div>
+            
+            <div class="pricing-footer">
+                <p>All plans include GPT-powered prompt generation and NanoBanana image processing</p>
+                <p>Cancel anytime • No setup fees • 30-day money-back guarantee</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- About Section -->
+    <section class="about-section" id="about">
+        <div class="container">
+            <div class="section-header">
+                <h2 class="section-title">
+                    About <span class="gradient-text">TryOnAI</span>
+                </h2>
+                <p class="section-subtitle">
+                    Revolutionizing the way people shop for clothes online
+                </p>
+            </div>
+            
+            <div class="about-content">
+                <div class="about-text">
+                    <h3>Our Mission</h3>
+                    <p>TryOnAI is on a mission to eliminate the guesswork from online shopping. We believe everyone should be able to see how clothes look on them before making a purchase, regardless of where they are or what device they're using.</p>
+                    
+                    <h3>How It Works</h3>
+                    <p>Our advanced AI technology combines GPT's intelligent prompt generation with NanoBanana's powerful image editing capabilities to seamlessly blend clothing items with your photos. The result? Realistic, high-quality virtual try-on images that help you make confident purchasing decisions.</p>
+                    
+                    <h3>Why Choose TryOnAI?</h3>
+                    <ul>
+                        <li><i class="fas fa-check"></i> Lightning-fast processing in seconds</li>
+                        <li><i class="fas fa-check"></i> High-quality, realistic results</li>
+                        <li><i class="fas fa-check"></i> Works with any clothing item</li>
+                        <li><i class="fas fa-check"></i> Multiple style options available</li>
+                        <li><i class="fas fa-check"></i> Privacy-focused and secure</li>
+                    </ul>
+                </div>
+                
+                <div class="about-stats">
+                    <div class="stat-item">
+                        <div class="stat-number">1M+</div>
+                        <div class="stat-label">Images Processed</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-number">50K+</div>
+                        <div class="stat-label">Happy Users</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-number">99.9%</div>
+                        <div class="stat-label">Uptime</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-number">24/7</div>
+                        <div class="stat-label">Support</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- FAQ Section -->
+    <section class="faq-section" id="faq">
+        <div class="container">
+            <div class="section-header">
+                <h2 class="section-title">
+                    Frequently Asked <span class="gradient-text">Questions</span>
+                </h2>
+                <p class="section-subtitle">
+                    Everything you need to know about TryOnAI
+                </p>
+            </div>
+            
+            <div class="faq-container">
+                <div class="faq-item">
+                    <div class="faq-question">
+                        <h3>How does TryOnAI work?</h3>
+                        <i class="fas fa-chevron-down"></i>
+                    </div>
+                    <div class="faq-answer">
+                        <p>TryOnAI uses GPT for intelligent prompt generation and NanoBanana for advanced image editing to analyze your uploaded photo and clothing items, then seamlessly blends them together to create realistic virtual try-on images. The process takes just a few seconds and produces high-quality results.</p>
+                    </div>
+                </div>
+                
+                <div class="faq-item">
+                    <div class="faq-question">
+                        <h3>What types of clothing can I try on?</h3>
+                        <i class="fas fa-chevron-down"></i>
+                    </div>
+                    <div class="faq-answer">
+                        <p>You can try on virtually any type of clothing including shirts, dresses, jackets, pants, and accessories. Our AI works best with clear, well-lit photos of clothing items.</p>
+                    </div>
+                </div>
+                
+                <div class="faq-item">
+                    <div class="faq-question">
+                        <h3>Is my data secure and private?</h3>
+                        <i class="fas fa-chevron-down"></i>
+                    </div>
+                    <div class="faq-answer">
+                        <p>Yes, absolutely. We take privacy seriously. Your photos are processed securely and are not stored permanently. We use industry-standard encryption and follow strict data protection protocols.</p>
+                    </div>
+                </div>
+                
+                <div class="faq-item">
+                    <div class="faq-question">
+                        <h3>How long does it take to generate results?</h3>
+                        <i class="fas fa-chevron-down"></i>
+                    </div>
+                    <div class="faq-answer">
+                        <p>Most virtual try-on images are generated within 10-30 seconds, depending on the complexity and number of images requested. Our AI is optimized for speed while maintaining high quality.</p>
+                    </div>
+                </div>
+                
+                <div class="faq-item">
+                    <div class="faq-question">
+                        <h3>Can I download the generated images?</h3>
+                        <i class="fas fa-chevron-down"></i>
+                    </div>
+                    <div class="faq-answer">
+                        <p>Yes! You can download individual images or all generated images at once. The images are provided in high resolution and are yours to keep.</p>
+                    </div>
+                </div>
+                
+                <div class="faq-item">
+                    <div class="faq-question">
+                        <h3>What photo requirements do you have?</h3>
+                        <i class="fas fa-chevron-down"></i>
+                    </div>
+                    <div class="faq-answer">
+                        <p>For best results, use clear, well-lit photos where you're facing the camera. Avoid photos with multiple people, heavy shadows, or blurry images. Supported formats include JPG, PNG, and WEBP up to 20MB.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
     <!-- Footer -->
     <footer class="footer">
         <div class="container">
@@ -334,9 +611,9 @@
                     </div>
                     <div class="footer-column">
                         <h4>Support</h4>
-                        <a href="#help">Help Center</a>
-                        <a href="#privacy">Privacy</a>
-                        <a href="#terms">Terms</a>
+                        <a href="#faq">FAQ</a>
+                        <a href="privacy.html">Privacy Policy</a>
+                        <a href="terms.html">Terms & Conditions</a>
                     </div>
                 </div>
             </div>

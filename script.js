@@ -36,9 +36,31 @@ const downloadAllBtn = document.getElementById('downloadAllBtn');
 
 // Initialize the application
 document.addEventListener('DOMContentLoaded', function() {
-    initializeEventListeners();
-    updateTryOnButton();
-    addScrollAnimations();
+    console.log('DOM loaded, initializing...');
+    console.log('TryOn button element:', tryOnBtn);
+    console.log('TryOn button exists:', !!tryOnBtn);
+    console.log('TryOn button type:', typeof tryOnBtn);
+    console.log('TryOn button tagName:', tryOnBtn ? tryOnBtn.tagName : 'N/A');
+    
+    if (tryOnBtn) {
+        console.log('TryOn button found, adding event listener...');
+        console.log('Button text content:', tryOnBtn.textContent);
+        console.log('Button classes:', tryOnBtn.className);
+    } else {
+        console.error('TryOn button NOT found!');
+        // Try to find it manually
+        const manualBtn = document.getElementById('tryOnBtn');
+        console.log('Manual search result:', manualBtn);
+    }
+    
+    try {
+        initializeEventListeners();
+        updateTryOnButton();
+        addScrollAnimations();
+        console.log('All initialization completed successfully');
+    } catch (error) {
+        console.error('Error during initialization:', error);
+    }
 });
 
 function initializeEventListeners() {
@@ -64,7 +86,23 @@ function initializeEventListeners() {
     });
     
     // Generate button
-    tryOnBtn.addEventListener('click', generateTryOnImage);
+    if (tryOnBtn) {
+        console.log('Adding click event listener to tryOnBtn...');
+        tryOnBtn.addEventListener('click', function(event) {
+            console.log('TryOn button clicked!', event);
+            event.preventDefault();
+            generateTryOnImage();
+        });
+        
+        // Also add a simple test click handler
+        tryOnBtn.addEventListener('click', function() {
+            console.log('Secondary click handler triggered');
+        });
+        
+        console.log('Event listeners added successfully');
+    } else {
+        console.error('Cannot add event listener to tryOnBtn - element not found');
+    }
     
     // Prompt display
     togglePromptBtn.addEventListener('click', togglePromptDisplay);
@@ -81,6 +119,7 @@ function initializeEventListeners() {
 function handleUserImageUpload(event) {
     const file = event.target.files[0];
     if (file) {
+        console.log('User image file uploaded:', file.name, file.type);
         userImageFile = file;
         displayUserImagePreview(file);
         updateTryOnButton();
@@ -90,6 +129,7 @@ function handleUserImageUpload(event) {
 function handleUserImageUrlInput(event) {
     const url = event.target.value.trim();
     if (url && isValidUrl(url)) {
+        console.log('User image URL added:', url);
         addUserImageFromUrl(url);
         updateTryOnButton();
     }
@@ -129,18 +169,21 @@ function removeUserImagePreview() {
 // Clothing Image Handling
 function handleClothingFileUpload(event) {
     const files = Array.from(event.target.files);
+    console.log('Clothing files uploaded:', files.length, 'files');
     files.forEach(file => {
         if (file && !clothingFiles.includes(file)) {
+            console.log('Adding clothing file:', file.name, file.type);
             clothingFiles.push(file);
             addClothingImageFromFile(file);
         }
     });
-    updateTryOnButton();
+    // Remove updateTryOnButton() from here - it will be called after FileReader completes
 }
 
 function handleClothingUrlInput(event) {
     const url = event.target.value.trim();
     if (url && isValidUrl(url) && !clothingImages.includes(url)) {
+        console.log('Clothing image URL added:', url);
         addClothingImageFromUrl(url);
         event.target.value = '';
         updateTryOnButton();
@@ -151,13 +194,16 @@ function addClothingImageFromFile(file) {
     const reader = new FileReader();
     reader.onload = function(e) {
         const imageData = e.target.result;
+        console.log('Clothing image data added, total clothing images:', clothingImages.length + 1);
         clothingImages.push(imageData);
         updateClothingPreviews();
+        updateTryOnButton(); // Move updateTryOnButton() here - after the image data is added
     };
     reader.readAsDataURL(file);
 }
 
 function addClothingImageFromUrl(url) {
+    console.log('Adding clothing URL, total clothing images:', clothingImages.length + 1);
     clothingImages.push(url);
     updateClothingPreviews();
 }
@@ -177,12 +223,23 @@ function updateClothingPreviews() {
     });
 }
 
-function removeClothingImage(index) {
-    clothingImages.splice(index, 1);
-    clothingFiles.splice(index, 1);
-    updateClothingPreviews();
-    updateTryOnButton();
-}
+// Make removeClothingImage global so it can be called from onclick
+window.removeClothingImage = function(index) {
+    console.log('Removing clothing image at index:', index);
+    console.log('Before removal - clothingImages length:', clothingImages.length);
+    console.log('Before removal - clothingFiles length:', clothingFiles.length);
+    
+    if (index >= 0 && index < clothingImages.length) {
+        clothingImages.splice(index, 1);
+        clothingFiles.splice(index, 1);
+        console.log('After removal - clothingImages length:', clothingImages.length);
+        console.log('After removal - clothingFiles length:', clothingFiles.length);
+        updateClothingPreviews();
+        updateTryOnButton();
+    } else {
+        console.error('Invalid index for clothing removal:', index);
+    }
+};
 
 // Style Selection
 function selectStyle(selectedOption) {
@@ -262,7 +319,7 @@ function setupDragAndDrop() {
                 addClothingImageFromFile(file);
             }
         });
-        updateTryOnButton();
+        // Remove updateTryOnButton() from here - it will be called after FileReader completes
     });
 }
 
@@ -280,12 +337,21 @@ function updateTryOnButton() {
     const hasUserImage = userImageFile || userImageData;
     const hasClothingImages = clothingImages.length > 0;
     
+    console.log('Updating TryOn button state:');
+    console.log('- hasUserImage:', hasUserImage);
+    console.log('- hasClothingImages:', hasClothingImages);
+    console.log('- userImageFile:', userImageFile);
+    console.log('- userImageData:', userImageData);
+    console.log('- clothingImages.length:', clothingImages.length);
+    
     if (hasUserImage && hasClothingImages) {
         tryOnBtn.disabled = false;
         tryOnBtn.style.opacity = '1';
+        console.log('Button ENABLED');
     } else {
         tryOnBtn.disabled = true;
         tryOnBtn.style.opacity = '0.6';
+        console.log('Button DISABLED');
     }
 }
 
@@ -460,10 +526,12 @@ function copyPrompt() {
     }
 }
 
-// Download Functions
-function downloadSingleImage(imageUrl, imageNumber) {
+// Download Functions - Make global so it can be called from onclick
+window.downloadSingleImage = function(imageUrl, imageNumber) {
+    console.log('Downloading single image:', imageUrl, 'Number:', imageNumber);
+    console.log('Calling downloadImage function...');
     downloadImage(imageUrl, `try-on-image-${imageNumber}.jpg`);
-}
+};
 
 function downloadAllImages() {
     if (generatedImageUrls.length === 0) {
@@ -540,6 +608,34 @@ document.querySelectorAll('a[href^="#"]').forEach(anchor => {
             });
         }
     });
+});
+
+// FAQ Functionality
+function initializeFAQ() {
+    const faqItems = document.querySelectorAll('.faq-item');
+    
+    faqItems.forEach(item => {
+        const question = item.querySelector('.faq-question');
+        
+        question.addEventListener('click', () => {
+            const isActive = item.classList.contains('active');
+            
+            // Close all FAQ items
+            faqItems.forEach(faqItem => {
+                faqItem.classList.remove('active');
+            });
+            
+            // Open clicked item if it wasn't active
+            if (!isActive) {
+                item.classList.add('active');
+            }
+        });
+    });
+}
+
+// Initialize FAQ when DOM is loaded
+document.addEventListener('DOMContentLoaded', function() {
+    initializeFAQ();
 });
 
 // Header scroll effect
