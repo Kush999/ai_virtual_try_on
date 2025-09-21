@@ -285,6 +285,33 @@
                             </div>
                         </div>
                     </div>
+
+                    <!-- Video Generation Option -->
+                    <div class="input-row">
+                        <div class="input-card full-width">
+                            <div class="input-header">
+                                <h3>Video Generation</h3>
+                                <p>Create dynamic videos from your generated images</p>
+                            </div>
+                            <div class="video-option-section">
+                                <div class="video-toggle">
+                                    <label class="toggle-switch">
+                                        <input type="checkbox" id="generateVideoToggle">
+                                        <span class="toggle-slider"></span>
+                                    </label>
+                                    <div class="toggle-content">
+                                        <h4>Generate Video</h4>
+                                        <p>Transform your static images into dynamic videos using Veo 3 AI</p>
+                                    </div>
+                                </div>
+                                <div class="video-prompt-section" id="videoPromptSection" style="display: none;">
+                                    <label>Video Prompt (Optional)</label>
+                                    <p class="input-description">Describe the desired video motion (e.g., "Rotate the outfit", "Walk forward", "Turn around")</p>
+                                    <input type="text" id="videoPrompt" placeholder="e.g., Rotate the outfit, keep everything else still">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
                 <!-- Generate Button -->
@@ -337,10 +364,22 @@
 
                     <div class="result-images" id="resultImages"></div>
                     
+                    <div class="result-videos" id="resultVideos" style="display: none;">
+                        <div class="videos-header">
+                            <h3>Generated Videos</h3>
+                            <p>Dynamic videos created from your images</p>
+                        </div>
+                        <div class="videos-grid" id="videosGrid"></div>
+                    </div>
+                    
                     <div class="download-section" id="downloadSection">
                         <button id="downloadAllBtn" class="download-btn">
                             <i class="fas fa-download"></i>
                             <span>Download All Images</span>
+                        </button>
+                        <button id="downloadAllVideosBtn" class="download-btn video-download-btn" style="display: none;">
+                            <i class="fas fa-video"></i>
+                            <span>Download All Videos</span>
                         </button>
                     </div>
                 </div>

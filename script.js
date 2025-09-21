@@ -4,6 +4,7 @@ let userImageData = null;
 let clothingImages = [];
 let clothingFiles = [];
 let generatedImageUrls = [];
+let generatedVideoUrls = [];
 
 // DOM elements
 const userImageInput = document.getElementById('userImageInput');
@@ -32,7 +33,13 @@ const promptContent = document.getElementById('promptContent');
 const promptText = document.getElementById('promptText');
 const copyPromptBtn = document.getElementById('copyPromptBtn');
 const resultImages = document.getElementById('resultImages');
+const resultVideos = document.getElementById('resultVideos');
+const videosGrid = document.getElementById('videosGrid');
 const downloadAllBtn = document.getElementById('downloadAllBtn');
+const downloadAllVideosBtn = document.getElementById('downloadAllVideosBtn');
+const generateVideoToggle = document.getElementById('generateVideoToggle');
+const videoPromptSection = document.getElementById('videoPromptSection');
+const videoPrompt = document.getElementById('videoPrompt');
 
 // Initialize the application
 document.addEventListener('DOMContentLoaded', function() {
@@ -110,6 +117,10 @@ function initializeEventListeners() {
     
     // Download
     downloadAllBtn.addEventListener('click', downloadAllImages);
+    downloadAllVideosBtn.addEventListener('click', downloadAllVideos);
+    
+    // Video generation toggle
+    generateVideoToggle.addEventListener('change', toggleVideoGeneration);
     
     // Drag and drop
     setupDragAndDrop();
@@ -383,6 +394,8 @@ async function generateTryOnImage() {
         const style = getSelectedStyle();
         const imageCount = getSelectedImageCount();
         const customPromptText = customPrompt.value.trim();
+        const generateVideo = generateVideoToggle.checked;
+        const videoPromptText = videoPrompt.value.trim();
         
         // Generate prompts
         const prompts = await createPrompts(userImageDataToSend, clothingImages, style, imageCount, customPromptText);
@@ -392,6 +405,11 @@ async function generateTryOnImage() {
         
         // Display results
         displayResult(result, prompts);
+        
+        // Generate videos if enabled
+        if (generateVideo && result.success && result.data.images) {
+            await generateVideosFromImages(result.data.images, videoPromptText);
+        }
         
     } catch (error) {
         console.error('Error generating image:', error);
@@ -683,3 +701,199 @@ window.addEventListener('scroll', () => {
         header.style.background = 'rgba(15, 15, 35, 0.8)';
     }
 });
+
+// Video Generation Functions
+function toggleVideoGeneration() {
+    const isEnabled = generateVideoToggle.checked;
+    videoPromptSection.style.display = isEnabled ? 'block' : 'none';
+}
+
+async function generateVideosFromImages(images, videoPromptText) {
+    if (!images || images.length === 0) {
+        console.log('No images available for video generation');
+        return;
+    }
+
+    console.log('Starting video generation for', images.length, 'images');
+    
+    // Show video progress section
+    showVideoProgress();
+    
+    // Clear previous videos
+    generatedVideoUrls = [];
+    videosGrid.innerHTML = '';
+    
+    // Generate videos for each image
+    for (let i = 0; i < images.length; i++) {
+        const image = images[i];
+        const videoPrompt = videoPromptText || "Rotate the outfit, keep everything else still";
+        
+        try {
+            console.log(`Generating video ${i + 1}/${images.length} for image:`, image.url);
+            
+            // Show loading state for this video
+            showVideoLoading(i + 1, images.length);
+            
+            // Call video generation API
+            const videoResult = await generateVideo(image.url, videoPrompt);
+            
+            if (videoResult.success) {
+                console.log(`Video ${i + 1} generated successfully:`, videoResult.videoUrl);
+                generatedVideoUrls.push(videoResult.videoUrl);
+                displayVideo(videoResult.videoUrl, i + 1);
+            } else {
+                console.error(`Failed to generate video ${i + 1}:`, videoResult.error);
+                showVideoError(i + 1, videoResult.error);
+            }
+            
+        } catch (error) {
+            console.error(`Error generating video ${i + 1}:`, error);
+            showVideoError(i + 1, error.message);
+        }
+    }
+    
+    // Hide progress and show videos section
+    hideVideoProgress();
+    if (generatedVideoUrls.length > 0) {
+        resultVideos.style.display = 'block';
+        downloadAllVideosBtn.style.display = 'inline-flex';
+    }
+}
+
+async function generateVideo(imageUrl, prompt) {
+    const response = await fetch('/api/generate-video', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            imageUrl: imageUrl,
+            prompt: prompt
+        })
+    });
+    
+    if (!response.ok) {
+        throw new Error('Failed to generate video');
+    }
+    
+    return await response.json();
+}
+
+function showVideoProgress() {
+    const progressHtml = `
+        <div class="video-progress" id="videoProgress">
+            <h4>
+                <i class="fas fa-video"></i>
+                Generating Videos
+            </h4>
+            <div class="progress-bar">
+                <div class="progress-fill" id="videoProgressFill"></div>
+            </div>
+            <div class="progress-text" id="videoProgressText">Preparing video generation...</div>
+        </div>
+    `;
+    
+    resultVideos.innerHTML = progressHtml;
+    resultVideos.style.display = 'block';
+}
+
+function showVideoLoading(videoNumber, totalVideos) {
+    const progressFill = document.getElementById('videoProgressFill');
+    const progressText = document.getElementById('videoProgressText');
+    
+    if (progressFill && progressText) {
+        const progress = (videoNumber / totalVideos) * 100;
+        progressFill.style.width = `${progress}%`;
+        progressText.textContent = `Generating video ${videoNumber} of ${totalVideos}...`;
+    }
+}
+
+function hideVideoProgress() {
+    const videoProgress = document.getElementById('videoProgress');
+    if (videoProgress) {
+        videoProgress.remove();
+    }
+}
+
+function showVideoError(videoNumber, error) {
+    const errorHtml = `
+        <div class="video-item">
+            <div class="video-player">
+                <div class="video-loading">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    <p>Video ${videoNumber} generation failed</p>
+                    <small>${error}</small>
+                </div>
+            </div>
+            <div class="video-info">
+                <h4>Video ${videoNumber} - Error</h4>
+                <p>Failed to generate video</p>
+            </div>
+        </div>
+    `;
+    
+    videosGrid.insertAdjacentHTML('beforeend', errorHtml);
+}
+
+function displayVideo(videoUrl, videoNumber) {
+    const videoHtml = `
+        <div class="video-item fade-in-up">
+            <div class="video-player">
+                <video controls preload="metadata">
+                    <source src="${videoUrl}" type="video/mp4">
+                    Your browser does not support the video tag.
+                </video>
+            </div>
+            <div class="video-info">
+                <h4>Video ${videoNumber}</h4>
+                <p>Dynamic video generated from your image</p>
+                <div class="video-actions">
+                    <button class="video-download-btn" onclick="downloadVideo('${videoUrl}', ${videoNumber})">
+                        <i class="fas fa-download"></i>
+                        Download Video
+                    </button>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    videosGrid.insertAdjacentHTML('beforeend', videoHtml);
+}
+
+// Make downloadVideo global so it can be called from onclick
+window.downloadVideo = function(videoUrl, videoNumber) {
+    console.log('Downloading video:', videoUrl, 'Number:', videoNumber);
+    downloadVideoFile(videoUrl, `try-on-video-${videoNumber}.mp4`);
+};
+
+function downloadVideoFile(url, filename) {
+    fetch(url)
+        .then(response => response.blob())
+        .then(blob => {
+            const downloadUrl = window.URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = downloadUrl;
+            link.download = filename;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            window.URL.revokeObjectURL(downloadUrl);
+        })
+        .catch(error => {
+            console.error('Video download failed:', error);
+            alert('Video download failed. Please try again.');
+        });
+}
+
+function downloadAllVideos() {
+    if (generatedVideoUrls.length === 0) {
+        alert('No videos to download');
+        return;
+    }
+    
+    generatedVideoUrls.forEach((url, index) => {
+        setTimeout(() => {
+            downloadVideoFile(url, `try-on-video-${index + 1}.mp4`);
+        }, index * 500); // Stagger downloads
+    });
+}

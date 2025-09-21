@@ -12,7 +12,8 @@ A stunning, modern web application that allows users to virtually try on clothin
 - **🎭 Style Selection**: Choose from 6 professional styles (Realistic, Fashion, Casual, Artistic, Vintage, Modern)
 - **🤖 GPT-Powered Prompts**: OpenAI GPT-4o-mini analyzes your photo and generates personalized prompts
 - **🖼️ Multiple Images**: Generate 1-4 unique variations of your try-on
-- **💾 Download Results**: Save individual images or download all at once
+- **🎬 Video Generation**: Transform static images into dynamic videos using Veo 3 AI
+- **💾 Download Results**: Save individual images/videos or download all at once
 - **📱 Responsive Design**: Works perfectly on desktop, tablet, and mobile
 - **🔒 Secure**: API keys protected, rate limiting, input validation, and security headers
 
@@ -98,9 +99,14 @@ Visit `http://localhost:3000` to see your TryOnAI application!
    - Click "Generate Virtual Try-On"
    - Watch the AI create your personalized images
 
-6. **💾 Download**:
-   - Download individual images
-   - Or download all images at once
+6. **🎬 Create Videos** (Optional):
+   - Toggle "Generate Video" to enable video creation
+   - Add a custom video prompt (e.g., "Rotate the outfit")
+   - Videos will be generated automatically after images
+
+7. **💾 Download**:
+   - Download individual images/videos
+   - Or download all content at once
 
 ## 🛡️ Security Features
 
@@ -131,6 +137,7 @@ This application is production-ready with comprehensive security measures:
 
 ### AI Services
 - **Replicate AI (google/nano-banana)**: High-quality image editing API
+- **Replicate AI (google/veo-3-fast)**: Advanced video generation from images
 - **OpenAI GPT-4o-mini**: Intelligent prompt generation with vision
 - **Image Analysis**: AI analyzes user photos for personalized results
 
@@ -243,10 +250,11 @@ The server will automatically restart when you make changes to the code.
 ## 📊 API Usage
 
 ### Replicate AI API
-- **Model**: `google/nano-banana`
+- **Image Model**: `google/nano-banana`
+- **Video Model**: `google/veo-3-fast`
 - **Cost**: Pay-per-use pricing
 - **Limits**: Based on your Replicate account
-- **Quality**: High-resolution image editing
+- **Quality**: High-resolution image editing and video generation
 
 ### OpenAI API
 - **Model**: `gpt-4o-mini`

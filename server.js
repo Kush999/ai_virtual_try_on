@@ -907,6 +907,63 @@ app.post('/api/upload-images', upload.array('images', 10), async (req, res) => {
     }
 });
 
+// Generate video from image endpoint
+app.post('/api/generate-video', async (req, res) => {
+    try {
+        const { imageUrl, prompt = "Rotate the outfit, keep everything else still" } = req.body;
+        
+        if (!imageUrl) {
+            return res.status(400).json({ 
+                error: 'Image URL is required' 
+            });
+        }
+
+        console.log('Generating video from image:', imageUrl);
+        console.log('Video prompt:', prompt);
+
+        // Call Replicate Veo 3 API
+        const result = await replicate.run("google/veo-3-fast", {
+            input: {
+                image: imageUrl,
+                prompt: prompt
+            }
+        });
+
+        console.log('Video generation completed');
+        console.log('Video result:', result);
+
+        // Format result to match expected structure
+        const videoUrl = result.url ? result.url() : result;
+        
+        res.json({
+            success: true,
+            videoUrl: videoUrl,
+            prompt: prompt
+        });
+
+    } catch (error) {
+        console.error('Error generating video:', error);
+        
+        // Handle specific Replicate errors
+        if (error.message.includes('API key') || error.message.includes('authentication')) {
+            return res.status(401).json({ 
+                error: 'Invalid API key. Please check your REPLICATE_API_TOKEN environment variable.' 
+            });
+        }
+        
+        if (error.message.includes('rate limit')) {
+            return res.status(429).json({ 
+                error: 'Rate limit exceeded. Please try again later.' 
+            });
+        }
+        
+        res.status(500).json({ 
+            error: 'Failed to generate video. Please try again.',
+            details: error.message 
+        });
+    }
+});
+
 // Serve uploaded images
 app.use('/uploads', express.static('uploads'));
 
