@@ -1,6 +1,6 @@
 # TryOnAI - Virtual Clothing Try-On
 
-A stunning, modern web application that allows users to virtually try on clothing using AI-powered image editing. Built with a beautiful dark theme, glassmorphism effects, and professional SaaS design.
+A stunning, modern web application that allows users to virtually try on clothing using AI-powered image editing. Built with a beautiful dark theme, glassmorphism effects, and professional SaaS design. Now powered by Replicate AI.
 
 ![TryOnAI Preview](https://via.placeholder.com/800x400/8b5cf6/ffffff?text=TryOnAI+Virtual+Try-On)
 
@@ -43,7 +43,7 @@ Edit `.env` with your actual API keys:
 
 ```env
 # Required API Keys
-FAL_KEY=your_fal_ai_api_key_here
+REPLICATE_API_TOKEN=your_replicate_api_token_here
 OPENAI_API_KEY=your_openai_api_key_here
 
 # Server Configuration
@@ -57,7 +57,7 @@ NODE_ENV=development
 ```
 
 **Get your API keys:**
-- **fal-ai**: [fal.ai Dashboard](https://fal.ai/dashboard) - Free tier available
+- **Replicate AI**: [Replicate Dashboard](https://replicate.com/account/api-tokens) - Pay-per-use pricing
 - **OpenAI**: [OpenAI Platform](https://platform.openai.com/api-keys) - Pay-per-use
 
 ### 4. Start the Application
@@ -130,7 +130,7 @@ This application is production-ready with comprehensive security measures:
 - **Error Handling**: Comprehensive error management
 
 ### AI Services
-- **fal-ai/nano-banana/edit**: High-quality image editing API
+- **Replicate AI (google/nano-banana)**: High-quality image editing API
 - **OpenAI GPT-4o-mini**: Intelligent prompt generation with vision
 - **Image Analysis**: AI analyzes user photos for personalized results
 
@@ -210,12 +210,12 @@ CORS_ORIGIN=https://yourdomain.com
 ### Common Issues
 
 **❌ "Invalid API key" error**
-- ✅ Check your `.env` file has the correct `FAL_KEY`
-- ✅ Verify your API key is active at [fal.ai Dashboard](https://fal.ai/dashboard)
+- ✅ Check your `.env` file has the correct `REPLICATE_API_TOKEN`
+- ✅ Verify your API key is active at [Replicate Dashboard](https://replicate.com/account/api-tokens)
 
 **❌ "Rate limit exceeded" error**
 - ✅ Wait a few minutes before trying again
-- ✅ Consider upgrading your fal-ai plan for higher limits
+- ✅ Check your Replicate account for usage limits
 
 **❌ Images not uploading**
 - ✅ Check file size (max 20MB)
@@ -242,10 +242,10 @@ The server will automatically restart when you make changes to the code.
 
 ## 📊 API Usage
 
-### fal-ai API
-- **Model**: `fal-ai/nano-banana/edit`
+### Replicate AI API
+- **Model**: `google/nano-banana`
 - **Cost**: Pay-per-use pricing
-- **Limits**: Based on your fal-ai plan
+- **Limits**: Based on your Replicate account
 - **Quality**: High-resolution image editing
 
 ### OpenAI API
@@ -268,7 +268,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## 🙏 Acknowledgments
 
-- [fal-ai](https://fal.ai/) for the powerful image editing API
+- [Replicate AI](https://replicate.com/) for the powerful image editing API
 - [OpenAI](https://openai.com/) for GPT-4o-mini
 - [Express.js](https://expressjs.com/) for the web framework
 - [Helmet.js](https://helmetjs.github.io/) for security headers

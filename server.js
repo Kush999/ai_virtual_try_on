@@ -5,7 +5,7 @@ const path = require('path');
 const fs = require('fs');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
-const { fal } = require('@fal-ai/client');
+const Replicate = require('replicate');
 const OpenAI = require('openai');
 require('dotenv').config();
 
@@ -21,7 +21,7 @@ app.use(helmet({
             scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'"],
             fontSrc: ["'self'", "https://fonts.gstatic.com", "https://cdnjs.cloudflare.com"],
             imgSrc: ["'self'", "data:", "https:", "http:"],
-            connectSrc: ["'self'", "https://api.openai.com", "https://fal.run", "https://v3.fal.media", "https://v3b.fal.media"],
+            connectSrc: ["'self'", "https://api.openai.com", "https://api.replicate.com", "https://replicate.delivery"],
             objectSrc: ["'none'"],
             upgradeInsecureRequests: [],
         },
@@ -84,14 +84,14 @@ const upload = multer({
     }
 });
 
-// Configure fal-ai client
-if (!process.env.FAL_KEY) {
-    console.error('FAL_KEY environment variable is required');
+// Configure Replicate client
+if (!process.env.REPLICATE_API_TOKEN) {
+    console.error('REPLICATE_API_TOKEN environment variable is required');
     process.exit(1);
 }
 
-fal.config({
-    credentials: process.env.FAL_KEY
+const replicate = new Replicate({
+    auth: process.env.REPLICATE_API_TOKEN,
 });
 
 // Configure OpenAI client
@@ -810,25 +810,28 @@ app.post('/api/generate-try-on', validateTryOnRequest, async (req, res) => {
             
             console.log(`Generating image ${i + 1} with prompt:`, prompt.substring(0, 100) + '...');
             
-            // Call fal-ai API for each image
-            const result = await fal.subscribe("fal-ai/nano-banana/edit", {
+            // Call Replicate API for each image
+            const result = await replicate.run("google/nano-banana", {
                 input: {
                     prompt: prompt,
-                    image_urls: allImageUrls,
-                    num_images: 1, // Generate one image per prompt
-                    output_format: "jpeg"
-                },
-                logs: true,
-                onQueueUpdate: (update) => {
-                    if (update.status === "IN_PROGRESS") {
-                        console.log(`Image ${i + 1} Processing:`, update.logs?.map(log => log.message).join('\n'));
-                    }
-                },
+                    image_input: allImageUrls
+                }
             });
 
-            console.log(`Image ${i + 1} generation completed:`, result.requestId);
-            console.log(`Image ${i + 1} result data:`, JSON.stringify(result.data, null, 2));
-            results.push(result);
+            console.log(`Image ${i + 1} generation completed`);
+            console.log(`Image ${i + 1} result:`, result);
+            
+            // Format result to match expected structure
+            const formattedResult = {
+                data: {
+                    images: [{
+                        url: result.url ? result.url() : result
+                    }]
+                },
+                requestId: `replicate_${Date.now()}_${i}`
+            };
+            
+            results.push(formattedResult);
         }
 
         // Combine all results
@@ -859,10 +862,10 @@ app.post('/api/generate-try-on', validateTryOnRequest, async (req, res) => {
     } catch (error) {
         console.error('Error generating try-on image:', error);
         
-        // Handle specific fal-ai errors
-        if (error.message.includes('API key')) {
+        // Handle specific Replicate errors
+        if (error.message.includes('API key') || error.message.includes('authentication')) {
             return res.status(401).json({ 
-                error: 'Invalid API key. Please check your FAL_KEY environment variable.' 
+                error: 'Invalid API key. Please check your REPLICATE_API_TOKEN environment variable.' 
             });
         }
         
@@ -932,7 +935,7 @@ app.use((req, res) => {
 // Start server
 app.listen(PORT, () => {
     console.log(`Server running on http://localhost:${PORT}`);
-    console.log('Make sure to set your FAL_KEY environment variable');
+    console.log('Make sure to set your REPLICATE_API_TOKEN environment variable');
 });
 
 // Graceful shutdown
